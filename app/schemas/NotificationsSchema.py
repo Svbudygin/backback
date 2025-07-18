@@ -16,9 +16,9 @@ class NotificationTypeEnum(Enum):
     LOW_BALANCE = 'LOW_BALANCE'
     ENABLE_REQ_FOR_FILL = 'ENABLE_REQ_FOR_FILL'
     DISABLE_REQ_FOR_FILL = 'DISABLE_REQ_FOR_FILL'
+    APPEAL_SUPPORT_CONFIRMATION_REQUIRED = 'APPEAL_SUPPORT_CONFIRMATION_REQUIRED'
     APPEAL_TIMEOUT_EXPIRED = 'APPEAL_TIMEOUT_EXPIRED'
     TEAM_STATEMENT_RECEIVED = 'TEAM_STATEMENT_RECEIVED'
-
 
 
 class AbstractNotificationSchema(BaseScheme):
@@ -94,6 +94,19 @@ class DisableReqForFillSupportNotificationSchema(BaseSupportNotificationSchema):
 
 
 
+class SupportConfirmationRequiredDataSchema(BaseScheme):
+    appeal_id: str
+    transaction_id: str
+    link: str
+
+
+class SupportConfirmationRequiredSchema(BaseSupportNotificationSchema):
+    event_type: str = NotificationTypeEnum.APPEAL_SUPPORT_CONFIRMATION_REQUIRED
+    data: SupportConfirmationRequiredDataSchema
+
+
+
+
 class TimeoutExpiredNotificationDataSchema(BaseScheme):
     appeal_id: str
     transaction_id: str
@@ -101,13 +114,11 @@ class TimeoutExpiredNotificationDataSchema(BaseScheme):
 
 class TimeoutExpiredNotificationSchema(BaseSupportNotificationSchema):
     event_type: str = NotificationTypeEnum.APPEAL_TIMEOUT_EXPIRED
-
     data: TimeoutExpiredNotificationDataSchema
 
 
 
 class TeamStatementReceivedSchema(BaseSupportNotificationSchema):
-
     """Уходит сапорту, когда команда загрузила выписку по отклонённой апелляции."""
 
     event_type: str = NotificationTypeEnum.TEAM_STATEMENT_RECEIVED
