@@ -1,0 +1,73 @@
+version: "3.5"
+
+services:
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_PASSWORD=laskdfmasldkfmaslkm
+      - POSTGRES_USER=cashway
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_DB=p2p_app # The PostgreSQL default database (automatically created at first launch)
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    expose:
+      - '5432'
+    ports:
+      - '5432:5432'
+    restart: unless-stopped
+
+
+
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DB_PASSWORD=${DB_PASSWORD} 
+      - DB_USER=${DB_USER}
+      - DB_NAME=${DB_NAME}
+      - DB_HOST=${DB_HOST}
+      - SERVER_BASE_URI=${SERVER_BASE_URI}
+    ports:
+      - '8080:8080'
+    command: flask run -h 0.0.0.0 -p 8080
+
+    restart: unless-stopped
+
+    depends_on:
+      - postgres
+
+
+  currency_bot:
+    build:
+      context: ./currency-bot
+      dockerfile: Dockerfile
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - SERVER_LOGIN=${SERVER_LOGIN}
+      - SERVER_PASSWORD=${SERVER_PASSWORD}
+      - CURRENCY_API=${CURRENCY_API}
+    command: python main.py
+    restart: unless-stopped
+
+    depends_on:
+      - backend
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    environment:
+      - API_URL=${API_URL}
+    ports:
+      - '3000:3000'
+    restart: unless-stopped

@@ -1,0 +1,9 @@
+[tool.pycln]
+all = true
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+reportOptionalOperand = false
+reportOptionalMemberAccess = false
+reportArgumentType = false
