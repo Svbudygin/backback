@@ -45,8 +45,7 @@ from app.schemas.AppealScheme import (
     AppealMerchantUpdateScheme,
     AppealListFilterScheme,
     CancelAppealRequestScheme,
-    # AcceptAppealRequestScheme,
-    # NewSupportConfirmationRequiredSchema
+    AcceptAppealRequestScheme
 )
 from app.schemas.CallbackSchema import (
     AppealFinalizationCallbackSchema,
@@ -348,11 +347,6 @@ async def update_appeal_by_id(
         for key, value in update_data.items():
             if key == 'amount' and current_user.role == Role.TEAM:
                 appeal.is_support_confirmation_required = True
-                notify_support(
-                    appeal_id=appeal.id,
-                    type='APPEAL_SUPPORT_CONFIRM',
-                    message=f"Appeal #{appeal.id} ждёт подтверждения саппорта"
-                )
 
             setattr(appeal, key, value)
 
@@ -405,11 +399,6 @@ async def accept_appeal(
 
             if appeal.amount != appeal.transaction.amount and current_user.role == Role.TEAM:
                 appeal.is_support_confirmation_required = True
-                notify_support(
-                    appeal_id=appeal.id,
-                    type='APPEAL_SUPPORT_CONFIRM',
-                    message=f"Appeal #{appeal.id} ждёт подтверждения саппорта"
-                )
                 await session.commit()
 
                 log_data = AcceptAppealByTeamNeedSupportConfirmationLogSchema(
@@ -501,11 +490,6 @@ async def cancel_appeal(
 
         if current_user.role == Role.TEAM:
             appeal.is_support_confirmation_required = True
-            notify_support(
-                appeal_id=appeal.id,
-                type='APPEAL_SUPPORT_CONFIRM',
-                message=f"Appeal #{appeal.id} ждёт подтверждения саппорта"
-            )
 
             log_data = CancelAppealByTeamNeedSupportConfirmationLogSchema(
                 request_id=request_id,
@@ -1162,12 +1146,6 @@ async def accept_appeal_by_system(session: AsyncSession, appeal_id: str):
     appeal.timeout_expired = True
 
     await session.commit()
-
-    notify_support(
-        appeal_id=appeal.id,
-        type='APPEAL_OVERDUE',
-        message=f"Appeal #{appeal.id} просрочена – требуется внимание саппорта"
-    )
 
 
 def _get_log_string(prefix, data):
