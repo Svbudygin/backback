@@ -63,7 +63,12 @@ from app.functions.external_transaction import external_transaction_update_
 from app.functions.merchant_callback import send_callback
 from app.utils.time import calculate_end_time_with_pause
 from app.services import notification_service
-from app.schemas.NotificationsSchema import NewAppealNotificationSchema, NewAppealNotificationDataSchema
+from app.schemas.NotificationsSchema import (
+    NewAppealNotificationSchema,
+    NewAppealNotificationDataSchema,
+    TimeoutExpiredNotificationSchema,
+    TimeoutExpiredNotificationDataSchema,
+)
 from app.core.config import settings
 
 
@@ -1144,6 +1149,16 @@ async def accept_appeal_by_system(session: AsyncSession, appeal_id: str):
         raise AppealNotFoundException()
 
     appeal.timeout_expired = True
+
+    await notification_service.send_notification(
+        TimeoutExpiredNotificationSchema(
+            support_id="all",
+            data=TimeoutExpiredNotificationDataSchema(
+                appeal_id=appeal.id,
+                transaction_id=appeal.transaction_id,
+            ),
+        )
+    )
 
     await session.commit()
 

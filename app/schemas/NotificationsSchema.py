@@ -1,6 +1,7 @@
-from typing import TypeVar
+from typing import TypeVar, List, Optional
 from enum import Enum
 
+from pydantic import BaseModel
 from app.schemas.BaseScheme import BaseScheme
 
 
@@ -13,6 +14,7 @@ class NotificationTypeEnum(Enum):
     LOW_BALANCE = 'LOW_BALANCE'
     ENABLE_REQ_FOR_FILL = 'ENABLE_REQ_FOR_FILL'
     DISABLE_REQ_FOR_FILL = 'DISABLE_REQ_FOR_FILL'
+    APPEAL_TIMEOUT_EXPIRED = 'APPEAL_TIMEOUT_EXPIRED'
 
 
 class AbstractNotificationSchema(BaseScheme):
@@ -85,6 +87,17 @@ class DisableReqForFillSupportNotificationSchema(BaseSupportNotificationSchema):
     event_type: str = NotificationTypeEnum.DISABLE_REQ_FOR_FILL
 
     data: ReqDisabledNotificationDataSchema
+
+
+class TimeoutExpiredNotificationDataSchema(BaseScheme):
+    appeal_id: str
+    transaction_id: str
+
+
+class TimeoutExpiredNotificationSchema(BaseSupportNotificationSchema):
+    event_type: str = NotificationTypeEnum.APPEAL_TIMEOUT_EXPIRED
+
+    data: TimeoutExpiredNotificationDataSchema
 
 
 class TeamStatementReceivedSchema(BaseModel):
