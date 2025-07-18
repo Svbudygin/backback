@@ -63,7 +63,12 @@ from app.functions.external_transaction import external_transaction_update_
 from app.functions.merchant_callback import send_callback
 from app.utils.time import calculate_end_time_with_pause
 from app.services import notification_service
-from app.schemas.NotificationsSchema import NewAppealNotificationSchema, NewAppealNotificationDataSchema
+from app.schemas.NotificationsSchema import (
+    NewAppealNotificationSchema,
+    NewAppealNotificationDataSchema,
+    SupportConfirmationRequiredSchema,
+    SupportConfirmationRequiredDataSchema,
+)
 from app.core.config import settings
 
 
@@ -344,15 +349,33 @@ async def update_appeal_by_id(
 
         update_data = validated_data.model_dump(exclude_unset=True)
 
+        notify_support = False
         for key, value in update_data.items():
-            if key == 'amount' and current_user.role == Role.TEAM:
+            if (
+                key == 'amount'
+                and current_user.role == Role.TEAM
+                and not appeal.is_support_confirmation_required
+            ):
                 appeal.is_support_confirmation_required = True
+                notify_support = True
 
             setattr(appeal, key, value)
 
         await session.commit()
 
         await session.refresh(appeal)
+
+        if notify_support:
+            await notification_service.send_notification(
+                SupportConfirmationRequiredSchema(
+                    support_id="all",
+                    data=SupportConfirmationRequiredDataSchema(
+                        appeal_id=appeal.id,
+                        transaction_id=appeal.transaction_id,
+                        link=f"{settings.FRONTEND_APPEALS_URL}/{appeal.id}",
+                    ),
+                )
+            )
 
         return await _get_response_by_role(
             current_user.role,
@@ -397,9 +420,27 @@ async def accept_appeal(
             else:
                 appeal.amount = appeal.transaction.amount
 
-            if appeal.amount != appeal.transaction.amount and current_user.role == Role.TEAM:
-                appeal.is_support_confirmation_required = True
+            if (
+                appeal.amount != appeal.transaction.amount
+                and current_user.role == Role.TEAM
+            ):
+                notify_support = False
+                if not appeal.is_support_confirmation_required:
+                    appeal.is_support_confirmation_required = True
+                    notify_support = True
                 await session.commit()
+
+                if notify_support:
+                    await notification_service.send_notification(
+                        SupportConfirmationRequiredSchema(
+                            support_id="all",
+                            data=SupportConfirmationRequiredDataSchema(
+                                appeal_id=appeal.id,
+                                transaction_id=appeal.transaction_id,
+                                link=f"{settings.FRONTEND_APPEALS_URL}/{appeal.id}",
+                            ),
+                        )
+                    )
 
                 log_data = AcceptAppealByTeamNeedSupportConfirmationLogSchema(
                     request_id=request_id,
@@ -489,7 +530,10 @@ async def cancel_appeal(
         appeal.reject_reason = data.reason
 
         if current_user.role == Role.TEAM:
-            appeal.is_support_confirmation_required = True
+            notify_support = False
+            if not appeal.is_support_confirmation_required:
+                appeal.is_support_confirmation_required = True
+                notify_support = True
 
             log_data = CancelAppealByTeamNeedSupportConfirmationLogSchema(
                 request_id=request_id,
@@ -502,13 +546,30 @@ async def cancel_appeal(
             )
 
             logger.info(log_data.model_dump_json())
-            logger.info(_get_log_string('CancelAppealByTeamNeedSupportConfirmation', {
-                'appeal_id': appeal.id,
-                'transaction_id': appeal.transaction_id,
-                'appeal_team_id': appeal.transaction.team_id,
-                'user_name': current_user.name,
-                'reject_reason': appeal.reject_reason,
-            }))
+            logger.info(
+                _get_log_string(
+                    'CancelAppealByTeamNeedSupportConfirmation',
+                    {
+                        'appeal_id': appeal.id,
+                        'transaction_id': appeal.transaction_id,
+                        'appeal_team_id': appeal.transaction.team_id,
+                        'user_name': current_user.name,
+                        'reject_reason': appeal.reject_reason,
+                    },
+                )
+            )
+
+            if notify_support:
+                await notification_service.send_notification(
+                    SupportConfirmationRequiredSchema(
+                        support_id="all",
+                        data=SupportConfirmationRequiredDataSchema(
+                            appeal_id=appeal.id,
+                            transaction_id=appeal.transaction_id,
+                            link=f"{settings.FRONTEND_APPEALS_URL}/{appeal.id}",
+                        ),
+                    )
+                )
         
         if current_user.role == Role.SUPPORT:
             appeal.is_support_confirmation_required = False

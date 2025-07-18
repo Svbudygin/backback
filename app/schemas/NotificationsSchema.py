@@ -13,6 +13,7 @@ class NotificationTypeEnum(Enum):
     LOW_BALANCE = 'LOW_BALANCE'
     ENABLE_REQ_FOR_FILL = 'ENABLE_REQ_FOR_FILL'
     DISABLE_REQ_FOR_FILL = 'DISABLE_REQ_FOR_FILL'
+    APPEAL_SUPPORT_CONFIRMATION_REQUIRED = 'APPEAL_SUPPORT_CONFIRMATION_REQUIRED'
 
 
 class AbstractNotificationSchema(BaseScheme):
@@ -85,6 +86,18 @@ class DisableReqForFillSupportNotificationSchema(BaseSupportNotificationSchema):
     event_type: str = NotificationTypeEnum.DISABLE_REQ_FOR_FILL
 
     data: ReqDisabledNotificationDataSchema
+
+
+class SupportConfirmationRequiredDataSchema(BaseScheme):
+    appeal_id: str
+    transaction_id: str
+    link: str
+
+
+class SupportConfirmationRequiredSchema(BaseSupportNotificationSchema):
+    event_type: str = NotificationTypeEnum.APPEAL_SUPPORT_CONFIRMATION_REQUIRED
+
+    data: SupportConfirmationRequiredDataSchema
 
 
 class TeamStatementReceivedSchema(BaseModel):
