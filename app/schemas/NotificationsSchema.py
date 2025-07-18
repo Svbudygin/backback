@@ -1,5 +1,6 @@
-from typing import TypeVar
+from typing import TypeVar, Optional, List
 from enum import Enum
+
 
 from app.schemas.BaseScheme import BaseScheme
 
@@ -13,6 +14,7 @@ class NotificationTypeEnum(Enum):
     LOW_BALANCE = 'LOW_BALANCE'
     ENABLE_REQ_FOR_FILL = 'ENABLE_REQ_FOR_FILL'
     DISABLE_REQ_FOR_FILL = 'DISABLE_REQ_FOR_FILL'
+    TEAM_STATEMENT_RECEIVED = 'TEAM_STATEMENT_RECEIVED'
 
 
 class AbstractNotificationSchema(BaseScheme):
@@ -87,11 +89,13 @@ class DisableReqForFillSupportNotificationSchema(BaseSupportNotificationSchema):
     data: ReqDisabledNotificationDataSchema
 
 
-class TeamStatementReceivedSchema(BaseModel):
+class TeamStatementReceivedSchema(BaseSupportNotificationSchema):
     """Уходит сапорту, когда команда загрузила выписку по отклонённой апелляции."""
+
+    event_type: str = NotificationTypeEnum.TEAM_STATEMENT_RECEIVED
     appeal_id: str
     transaction_id: str
     merchant_transaction_id: Optional[str] = None
     merchant_appeal_id: Optional[str] = None
     reject_reason: Optional[str] = None      # чтобы сапорт видел, почему отклоняли
-    file_ids: List[str]  
+    file_ids: List[str]
