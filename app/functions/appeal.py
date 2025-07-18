@@ -63,7 +63,11 @@ from app.functions.external_transaction import external_transaction_update_
 from app.functions.merchant_callback import send_callback
 from app.utils.time import calculate_end_time_with_pause
 from app.services import notification_service
-from app.schemas.NotificationsSchema import NewAppealNotificationSchema, NewAppealNotificationDataSchema
+from app.schemas.NotificationsSchema import (
+    NewAppealNotificationSchema,
+    NewAppealNotificationDataSchema,
+    TeamStatementReceivedSchema,
+)
 from app.core.config import settings
 
 
@@ -581,6 +585,19 @@ async def upload_team_statement(
         await session.commit()
 
         await session.refresh(appeal)
+
+        if appeal.reject_reason:
+            await notification_service.send_notification(
+                TeamStatementReceivedSchema(
+                    support_id="all",
+                    appeal_id=appeal.id,
+                    transaction_id=appeal.transaction_id,
+                    merchant_transaction_id=appeal.transaction.merchant_transaction_id,
+                    merchant_appeal_id=appeal.merchant_appeal_id,
+                    reject_reason=appeal.reject_reason,
+                    file_ids=file_paths,
+                )
+            )
 
         log_prefix = f'AppealUploadTeamStatementBy{current_user.role.capitalize()}'
         log_data = AppealUploadTeamStatementByRoleLogSchema(
