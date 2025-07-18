@@ -1,6 +1,8 @@
-from typing import TypeVar, Optional, List
+
+from typing import TypeVar, List, Optional
 from enum import Enum
 
+from pydantic import BaseModel
 
 from app.schemas.BaseScheme import BaseScheme
 
@@ -14,7 +16,9 @@ class NotificationTypeEnum(Enum):
     LOW_BALANCE = 'LOW_BALANCE'
     ENABLE_REQ_FOR_FILL = 'ENABLE_REQ_FOR_FILL'
     DISABLE_REQ_FOR_FILL = 'DISABLE_REQ_FOR_FILL'
+    APPEAL_TIMEOUT_EXPIRED = 'APPEAL_TIMEOUT_EXPIRED'
     TEAM_STATEMENT_RECEIVED = 'TEAM_STATEMENT_RECEIVED'
+
 
 
 class AbstractNotificationSchema(BaseScheme):
@@ -89,7 +93,21 @@ class DisableReqForFillSupportNotificationSchema(BaseSupportNotificationSchema):
     data: ReqDisabledNotificationDataSchema
 
 
+
+class TimeoutExpiredNotificationDataSchema(BaseScheme):
+    appeal_id: str
+    transaction_id: str
+
+
+class TimeoutExpiredNotificationSchema(BaseSupportNotificationSchema):
+    event_type: str = NotificationTypeEnum.APPEAL_TIMEOUT_EXPIRED
+
+    data: TimeoutExpiredNotificationDataSchema
+
+
+
 class TeamStatementReceivedSchema(BaseSupportNotificationSchema):
+
     """Уходит сапорту, когда команда загрузила выписку по отклонённой апелляции."""
 
     event_type: str = NotificationTypeEnum.TEAM_STATEMENT_RECEIVED

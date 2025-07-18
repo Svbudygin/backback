@@ -66,6 +66,8 @@ from app.services import notification_service
 from app.schemas.NotificationsSchema import (
     NewAppealNotificationSchema,
     NewAppealNotificationDataSchema,
+    TimeoutExpiredNotificationSchema,
+    TimeoutExpiredNotificationDataSchema,
     TeamStatementReceivedSchema,
 )
 from app.core.config import settings
@@ -1161,6 +1163,16 @@ async def accept_appeal_by_system(session: AsyncSession, appeal_id: str):
         raise AppealNotFoundException()
 
     appeal.timeout_expired = True
+
+    await notification_service.send_notification(
+        TimeoutExpiredNotificationSchema(
+            support_id="all",
+            data=TimeoutExpiredNotificationDataSchema(
+                appeal_id=appeal.id,
+                transaction_id=appeal.transaction_id,
+            ),
+        )
+    )
 
     await session.commit()
 
