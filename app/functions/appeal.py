@@ -68,6 +68,7 @@ from app.schemas.NotificationsSchema import (
     NewAppealNotificationDataSchema,
     TimeoutExpiredNotificationSchema,
     TimeoutExpiredNotificationDataSchema,
+    TeamStatementReceivedSchema,
 )
 from app.core.config import settings
 
@@ -586,6 +587,19 @@ async def upload_team_statement(
         await session.commit()
 
         await session.refresh(appeal)
+
+        if appeal.reject_reason:
+            await notification_service.send_notification(
+                TeamStatementReceivedSchema(
+                    support_id="all",
+                    appeal_id=appeal.id,
+                    transaction_id=appeal.transaction_id,
+                    merchant_transaction_id=appeal.transaction.merchant_transaction_id,
+                    merchant_appeal_id=appeal.merchant_appeal_id,
+                    reject_reason=appeal.reject_reason,
+                    file_ids=file_paths,
+                )
+            )
 
         log_prefix = f'AppealUploadTeamStatementBy{current_user.role.capitalize()}'
         log_data = AppealUploadTeamStatementByRoleLogSchema(
